@@ -1,5 +1,5 @@
 # Disable device search history and log changes
-$LogFile = "$env:USERPROFILE\Documents\SearchHistoryDisable.log"
+$LogFile = "C:\Logs\SearchHistoryDisable.log"
 
 # Function to write logs
 function Write-Log {
