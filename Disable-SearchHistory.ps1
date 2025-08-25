@@ -14,9 +14,11 @@ try {
     $RegName = "IsDeviceSearchHistoryEnabled"
 
     # Disable device search history
-    Set-ItemProperty -Path $RegPath -Name $RegName -Value 0 -Type DWord
+    New-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\SearchSettings" -Name "IsDeviceSearchHistoryEnabled" -Value 0 -PropertyType DWord -Force 
 
-    Write-Log "Successfully set $RegName to 0 at $RegPath"
+    $Status = Get-ItemPropertyValue -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\SearchSettings" -Name "IsDeviceSearchHistoryEnabled"
+
+    Write-Log "Successfully set $RegName to $Status at $RegPath"
 }
 catch {
     Write-Log "ERROR: Failed to update registry. $_"
