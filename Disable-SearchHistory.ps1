@@ -16,7 +16,7 @@ try {
     # Disable device search history
     New-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\SearchSettings" -Name "IsDeviceSearchHistoryEnabled" -Value 0 -PropertyType DWord -Force 
 
-    $Status = Get-ItemPropertyValue -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\SearchSettings" -Name "IsDeviceSearchHistoryEnabled"
+    $Status = (Get-ItemPropertyValue -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\SearchSettings" -Name "IsDeviceSearchHistoryEnabled")
 
     Write-Log "Successfully set $RegName to $Status at $RegPath"
 }
