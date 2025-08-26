@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 $LogFile = "C:\Logs\SearchHistoryDisable.log"
-$UserName = "Public1"
+$UserName = "Public"
 $UserProfilePath = "C:\Users\$UserName"
 $HiveFile = Join-Path $UserProfilePath "NTUSER.DAT"
 $MountPoint = "HKU\Temp_$UserName"
