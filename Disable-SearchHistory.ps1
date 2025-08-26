@@ -6,31 +6,48 @@ $LogFile = "C:\Logs\SearchHistoryDisable.log"
 $logDir = Split-Path $LogFile -Parent
 if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
 
-function Write-Log {
-    param([string]$Message)
-    $Timestamp = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
-    Add-Content -Path $LogFile -Value "$Timestamp - $Message"
+function Write-Log([string]$msg) {
+    $ts = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
+    Add-Content -Path $LogFile -Value "$ts - $msg"
 }
 
-try {
-    # Registry path & name
-    $RegPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\SearchSettings"
-    $RegName = "IsDeviceSearchHistoryEnabled"
+Write-Log "==== Script started ===="
 
+# Log current user context
+$me = [Security.Principal.WindowsIdentity]::GetCurrent()
+Write-Log "Running as: $($me.Name), SID: $($me.User.Value)"
+
+# Log all local users on the machine
+try {
+    $users = Get-LocalUser | Select-Object Name, Enabled, LastLogon
+    Write-Log "Local Users on this machine:"
+    foreach ($u in $users) {
+        Write-Log ("   Name: {0}, Enabled: {1}, LastLogon: {2}" -f $u.Name, $u.Enabled, $u.LastLogon)
+    }
+} catch {
+    Write-Log "ERROR: Failed to enumerate local users. $($_.Exception.Message)"
+}
+
+# Registry path & name
+$RegPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\SearchSettings"
+$RegName = "IsDeviceSearchHistoryEnabled"
+
+try {
     # Ensure the key exists
     if (-not (Test-Path $RegPath)) { New-Item -Path $RegPath -Force | Out-Null }
 
-    # Set the value to 0 (disabled) - use Set-ItemProperty so it works whether it exists or not
+    # Set the value to 0 (disabled)
     Set-ItemProperty -Path $RegPath -Name $RegName -Value 0 -Type DWord
 
-    # Read back reliably
+    # Verify
     $prop = Get-ItemProperty -Path $RegPath -Name $RegName
-    [int]$Status = $prop.$RegName  # force to int for clean logging
+    [int]$Status = $prop.$RegName
 
     Write-Log "Successfully set $RegName to $Status at $RegPath"
     Write-Output "Successfully set $RegName to $Status at $RegPath"
 }
 catch {
     Write-Log "ERROR: Failed to update registry. $($_.Exception.Message)"
-    Write-Error $_
 }
+
+Write-Log "==== Script finished ===="
