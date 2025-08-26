@@ -1,7 +1,12 @@
-# Disable device search history and log changes
+# Disable device search history and log changes (HKCU)
 $LogFile = "C:\Logs\SearchHistoryDisable.log"
+$KeyPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\SearchSettings"
+$ValueName = "IsDeviceSearchHistoryEnabled"
+$Desired = 0
 
-# Function to write logs
+# Ensure logging folder exists
+$null = New-Item -ItemType Directory -Path (Split-Path $LogFile) -Force -ErrorAction SilentlyContinue
+
 function Write-Log {
     param([string]$Message)
     $Timestamp = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
@@ -9,17 +14,27 @@ function Write-Log {
 }
 
 try {
-    # Registry path
-    $RegPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\SearchSettings"
-    $RegName = "IsDeviceSearchHistoryEnabled"
+    $ErrorActionPreference = 'Stop'
 
-    # Disable device search history
-    New-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\SearchSettings" -Name "IsDeviceSearchHistoryEnabled" -Value 0 -PropertyType DWord -Force 
+    # Ensure the key exists
+    if (-not (Test-Path $KeyPath)) {
+        New-Item -Path $KeyPath -Force | Out-Null
+        Write-Log "Created registry key: $KeyPath"
+    }
 
-    $Status = (Get-ItemPropertyValue -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\SearchSettings" -Name "IsDeviceSearchHistoryEnabled")
+    # Set the value (use Set-ItemProperty to avoid ambiguity)
+    Set-ItemProperty -Path $KeyPath -Name $ValueName -Type DWord -Value $Desired
 
-    Write-Log "Successfully set $RegName to $Status at $RegPath"
+    # Read back the value explicitly from the property bag
+    $propBag = Get-ItemProperty -Path $KeyPath -Name $ValueName
+    $Status = [int]$propBag.$ValueName  # cast for clarity
+
+    # Log with subexpression to force visible stringification
+    Write-Log ("Successfully set {0} to {1} at {2}" -f $ValueName, $Status, $KeyPath)
+
+    # Optional: also echo to console for immediate visibility
+    Write-Output ("{0}: {1}" -f $ValueName, $Status)
 }
 catch {
-    Write-Log "ERROR: Failed to update registry. $_"
+    Write-Log "ERROR: Failed to update registry. $($_.Exception.Message)"
 }
